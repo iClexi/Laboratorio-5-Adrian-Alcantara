@@ -1,0 +1,15 @@
+mkdir -p /home/michael20250845/sync_folder
+cd /home/michael20250845/sync_folder
+touch file{001..100}.txt
+rsync -az --delete /home/michael20250845/sync_folder/ holi@10.0.0.201:/home/holi/sync_folder
+cat > /home/michael20250845/sync.sh << 'EOF'
+#!/bin/bash
+SRC="/home/michael20250845/sync_folder"
+DEST="holi@10.0.0.201:/home/holi/sync_folder"
+mkdir -p "$SRC"
+rsync -az --delete "$SRC/" "$DEST"
+EOF
+chmod +x /home/michael20250845/sync.sh
+(crontab -u michael20250845 -l; echo "* * * * * /home/michael20250845/sync.sh") | crontab -u michael20250845 -
+touch /home/michael20250845/sync_folder/archivonuevo.txt
+ssh holi@10.0.0.201 ls /home/holi/sync_folder
