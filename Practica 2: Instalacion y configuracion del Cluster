@@ -1,42 +1,41 @@
-#EN PC1 Y PC2
+# EN PC1 Y PC2
 
-
+# Instalar heartbeat
 sudo apt-get update
 sudo apt-get install -y heartbeat
+
+# Crear carpeta de configuración
 sudo mkdir -p /etc/ha.d
 
-# Configura ha.cf
+# Editar ha.cf
 sudo nano /etc/ha.d/ha.cf
+# Contenido:
+logfacility     local0
+keepalive       2
+deadtime        15
+warntime        5
+initdead        60
+bcast           enp0s3
+node            michael20250845
+node            michael20250845clon
+auto_failback   off
+# Guardar con CTRL+O, ENTER, salir con CTRL+X
 
-# logfacility local0
-# keepalive    2
-# deadtime     15
-# warntime     5
-# initdead     60
-# bcast        enp0s3
-# node         michael20250845
-# node         michael20250845clon
-# auto_failback off
-
-# Configura haresources
+# Editar haresources
 sudo nano /etc/ha.d/haresources
+# Contenido:
+michael20250845    IPaddr2::10.0.0.101/24/enp0s3
+# Guardar y salir
 
-# michael20250845    IPaddr2::10.0.0.101/24/enp0s3
-
-# Configura authkeys
+# Editar authkeys
 sudo nano /etc/ha.d/authkeys
+# Contenido:
+auth 1
+1 sha1 MiClaveSecretaCompartida
+# Guardar y salir
 
-# auth1
-# 1 sha1 MiClaveSecretaCompartida
-
+# Permisos correctos para authkeys
 sudo chmod 600 /etc/ha.d/authkeys
 
-
-
-# Inicia y habilita Heartbeat
+# Iniciar y habilitar heartbeat
 sudo systemctl enable --now heartbeat
-
-
-
-
-
