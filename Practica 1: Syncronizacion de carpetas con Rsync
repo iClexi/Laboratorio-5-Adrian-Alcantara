@@ -1,15 +1,47 @@
+# Crear carpeta y archivos de prueba en 10.0.0.200
 mkdir -p /home/michael20250845/sync_folder
 cd /home/michael20250845/sync_folder
 touch file{001..100}.txt
+
+# Crear carpeta remota en 10.0.0.201
+ssh holi@10.0.0.201 'mkdir -p /home/holi/sync_folder'
+
+# Sincronización inicial (200 -> 201)
 rsync -az --delete /home/michael20250845/sync_folder/ holi@10.0.0.201:/home/holi/sync_folder
-cat > /home/michael20250845/sync.sh << 'EOF'
+# Sincronización inicial (201 -> 200)
+rsync -az --delete holi@10.0.0.201:/home/holi/sync_folder/ /home/michael20250845/sync_folder
+
+# Configurar clave SSH para no pedir contraseña
+ssh-keygen -t ed25519 -N "" -f ~/.ssh/id_ed25519
+ssh-copy-id holi@10.0.0.201
+
+# Crear script de sincronización bidireccional
+nano /home/michael20250845/sync.sh
+# Contenido dentro de nano:
 #!/bin/bash
-SRC="/home/michael20250845/sync_folder"
-DEST="holi@10.0.0.201:/home/holi/sync_folder"
-mkdir -p "$SRC"
-rsync -az --delete "$SRC/" "$DEST"
-EOF
+SRC_LOCAL="/home/michael20250845/sync_folder"
+SRC_REMOTE="holi@10.0.0.201:/home/holi/sync_folder"
+# Local -> Remoto
+rsync -az --delete "$SRC_LOCAL/" "$SRC_REMOTE"
+# Remoto -> Local
+rsync -az --delete "$SRC_REMOTE/" "$SRC_LOCAL"
+# Guardar con CTRL+O, ENTER y salir con CTRL+X
+
+# Dar permisos de ejecución
 chmod +x /home/michael20250845/sync.sh
-(crontab -u michael20250845 -l; echo "* * * * * /home/michael20250845/sync.sh") | crontab -u michael20250845 -
-touch /home/michael20250845/sync_folder/archivonuevo.txt
+
+# Programar en cron cada minuto
+crontab -u michael20250845 -e
+# Agregar al final:
+* * * * * /home/michael20250845/sync.sh
+# Guardar y salir
+
+# Probar creando un archivo nuevo en el local
+touch /home/michael20250845/sync_folder/prueba_local.txt
+
+# Probar creando un archivo nuevo en el remoto
+ssh holi@10.0.0.201 'touch /home/holi/sync_folder/prueba_remoto.txt'
+
+# Esperar un minuto y verificar que ambos estén en las dos carpetas
+ls /home/michael20250845/sync_folder
 ssh holi@10.0.0.201 ls /home/holi/sync_folder
