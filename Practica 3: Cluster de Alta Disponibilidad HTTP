@@ -2,51 +2,77 @@
 sudo apt-get update
 sudo apt-get install -y apache2 keepalived
 
-# En PC1 (10.0.0.200)
+# --- PC1 (10.0.0.200) ---
 echo "Este es el SERVER 1" | sudo tee /var/www/html/index.html
 sudo nano /etc/keepalived/keepalived.conf
-
-# vrrp_instance VI_1 {
-#     state MASTER
-#     interface enp0s3
-#     virtual_router_id 51
-#     priority 101
-#     advert_int 1
-#     authentication {
-#         auth_type PASS
-#         auth_pass 12345678
-#     }
-#     virtual_ipaddress {
-#         10.0.0.102
-#     }
-# }
+# Contenido:
+vrrp_instance VI_1 {
+    state MASTER
+    interface enp0s3
+    virtual_router_id 51
+    priority 101
+    advert_int 1
+    authentication {
+        auth_type PASS
+        auth_pass 12345678
+    }
+    virtual_ipaddress {
+        10.0.0.102
+    }
+}
+# Guardar y salir
 
 sudo systemctl enable --now apache2
 sudo systemctl enable --now keepalived
 
-# En PC2 (10.0.0.201)
-echo "Este es el SERVER2" | sudo tee /var/www/html/index.html
+# --- PC2 (10.0.0.201) ---
+echo "Este es el SERVER 2" | sudo tee /var/www/html/index.html
 sudo nano /etc/keepalived/keepalived.conf
-
-# vrrp_instance VI_1 {
-#     state BACKUP
-#     interface enp0s3
-#     virtual_router_id 51
-#     priority 100
-#     advert_int 1
-#     authentication {
-#         auth_type PASS
-#         auth_pass 12345678
-#     }
-#     virtual_ipaddress {
-#         10.0.0.102
-#     }
-# }
+# Contenido:
+vrrp_instance VI_1 {
+    state BACKUP
+    interface enp0s3
+    virtual_router_id 51
+    priority 100
+    advert_int 1
+    authentication {
+        auth_type PASS
+        auth_pass 12345678
+    }
+    virtual_ipaddress {
+        10.0.0.102
+    }
+}
+# Guardar y salir
 
 sudo systemctl enable --now apache2
 sudo systemctl enable --now keepalived
 
+# --- PRUEBA DE FAILOVER ---
+# 1. Verificar IP virtual en el MASTER
+ip addr show enp0s3
 
-# Probar failover (en cualquiera)
+# 2. Probar acceso a la IP virtual (desde cualquier PC que esté en la red)
+# En navegador:
+#   http://10.0.0.102
+# Debería mostrar:
+#   "Este es el SERVER 1"
+# Con curl:
+curl http://10.0.0.102
+
+# 3. Detener keepalived en el MASTER para forzar failover
 sudo systemctl stop keepalived
+
+# 4. Verificar que la IP virtual ahora está en el BACKUP
+ip addr show enp0s3
+
+# 5. Probar otra vez acceso a la IP virtual
+# En navegador:
+#   http://10.0.0.102
+# Ahora debería mostrar:
+#   "Este es el SERVER 2"
+# Con curl:
+curl http://10.0.0.102
+
+# 6. Volver a iniciar keepalived en el MASTER
 sudo systemctl start keepalived
